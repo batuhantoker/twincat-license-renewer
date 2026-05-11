@@ -1,0 +1,11 @@
+.env
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# Stray debug log dropped by TwinCAT XAE Shell / Chromium
+debug.log

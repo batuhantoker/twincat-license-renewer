@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "license-renewer"
+version = "0.1.0"
+description = "Automates the TwinCAT 3 XAE Shell 7-day trial license renewal, including OCR of the captcha."
+requires-python = ">=3.11"
+dependencies = [
+    "pywinauto>=0.6.8",
+    "pytesseract>=0.3.10",
+    "Pillow>=10.0",
+    "opencv-python>=4.8",
+    "numpy>=1.26",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+renew-license = "license_renewer.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["license_renewer*"]
