@@ -32,6 +32,36 @@ through the dialog every week.
   is recommended. Default path: `C:\Program Files\Tesseract-OCR\tesseract.exe`
   (override via `TESSERACT_EXE`).
 
+### 32-bit vs 64-bit XAE Shell
+
+Beckhoff ships TcXaeShell in two bitnesses, and they can be installed side by side:
+
+| Bitness | Install path |
+|---------|--------------|
+| 32-bit  | `C:\Program Files (x86)\Beckhoff\TcXaeShell\Common7\IDE\TcXaeShell.exe` |
+| 64-bit  | `C:\Program Files\Beckhoff\TcXaeShell\Common7\IDE\TcXaeShell.exe` |
+
+Two things to know:
+
+- **`XAE_SHELL_EXE` must match the shell you actually use.** The script
+  attaches to a *running* shell by exact executable path, so the default
+  (the 32-bit path above) will only ever attach to the 32-bit instance —
+  even if a 64-bit one is also running. If you work in the 64-bit shell,
+  set `XAE_SHELL_EXE` to the `Program Files\` path (env var or `.env`).
+- **Run Python with the same bitness as the shell.** TcXaeShell's Solution
+  Explorer is a WPF control; a *64-bit* Python + pywinauto often can't
+  enumerate the WPF tree of the *32-bit* shell (and vice versa), which
+  shows up as `Exit 3 — Could not find 'Solution Explorer' tree`. Matching
+  bitness avoids it. Easiest path if you're unsure: use the **32-bit**
+  TcXaeShell with a **32-bit** Python venv.
+
+Check what's running and which Python you have:
+
+```powershell
+Get-CimInstance Win32_Process -Filter "Name='TcXaeShell.exe'" | Select-Object ProcessId, ExecutablePath
+python -c "import struct; print(struct.calcsize('P') * 8)"   # 32 or 64
+```
+
 Install Tesseract via winget:
 
 ```bash
@@ -80,7 +110,7 @@ Exit codes:
 
 | Variable | Default | Notes |
 |----------|---------|-------|
-| `XAE_SHELL_EXE` | `C:\Program Files (x86)\Beckhoff\TcXaeShell\Common7\IDE\TcXaeShell.exe` | Falls back to scanning the Beckhoff and legacy TwinCAT install folders |
+| `XAE_SHELL_EXE` | `C:\Program Files (x86)\Beckhoff\TcXaeShell\Common7\IDE\TcXaeShell.exe` | The **32-bit** shell. Set to the `Program Files\` path for the 64-bit shell — see [32-bit vs 64-bit XAE Shell](#32-bit-vs-64-bit-xae-shell). Falls back to scanning the Beckhoff and legacy TwinCAT install folders |
 | `TESSERACT_EXE` | `C:\Program Files\Tesseract-OCR\tesseract.exe` | |
 | `OCR_MAX_RETRIES` | `8` | Max number of fresh captchas to try (each refresh = cancel + reopen) |
 | `STEP_TIMEOUT_S` | `15` | Per-step wait ceiling for a UI control to appear |
@@ -159,10 +189,13 @@ If you want tighter OCR on a specific build/font:
   - "Recent Projects and Solutions": if the menu item has different
     wording in your VS shell version, adjust `open_most_recent_project`
     in `license_renewer/flow.py`.
-- **Exit 3, License editor is slow to open**: this step walks the
-  Solution Explorer tree. If the Solution Explorer pane is closed, open
-  it (Ctrl+Alt+L) before running. If the tree is still empty, make sure
-  the project has loaded fully (look for `SYSTEM` under the project node).
+- **Exit 3, License editor / "Solution Explorer" tree not found**: this
+  step walks the Solution Explorer tree. If the Solution Explorer pane is
+  closed, open it (Ctrl+Alt+L) before running. If the tree is still empty,
+  make sure the project has loaded fully (look for `SYSTEM` under the
+  project node). If the tree control itself can't be found at all (not just
+  a missing node), it's almost always a **bitness mismatch** between Python
+  and TcXaeShell — see [32-bit vs 64-bit XAE Shell](#32-bit-vs-64-bit-xae-shell).
 - **Exit 4, captcha unsolved**: open the latest `_pp.png` in
   `%LOCALAPPDATA%\license-renewer\captchas\`.
   - All white / blank → crop region is off; adjust the percentages in
